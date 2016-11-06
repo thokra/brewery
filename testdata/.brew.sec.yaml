@@ -1,0 +1,9 @@
+environment:
+  GC_SERVICE_KEY: >
+    {
+    "private_key": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
+    "client_email": "test@gserviceaccount.com",
+    "client_id": "12487645876234765",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://accounts.google.com/o/oauth2/token",
+    }

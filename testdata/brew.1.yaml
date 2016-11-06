@@ -1,0 +1,64 @@
+# Pull in the repository
+project:
+  mount: /go/src/git.d09.no/lager/lager
+  timeout: 10m # Timeout for the entire build
+
+# Brews is containers needed for testing or publishing
+brews:
+  # Start rethinkdb as a service, used in integration tests
+  rethink:
+    name: RethinkDB
+    image: rethinkdb:latest
+
+  # Test and build the application
+  application:
+    name: My Application
+    build: Dockerfile
+    workdir: /go/src/git.d09.no/lager/lager
+    link:
+      - rethink
+    env:
+      - MYENV=hello
+    commands:
+      - go test ./...
+      - go build -ldflags "-X main.Build $$BUILD_NUMBER" -o outbin main.go
+    volumes:
+      project:
+        - /go/src/git.d09.no/lager/lager
+
+  # Generate a changelog. Should be run after application
+  changelog:
+    name: Generate changelog
+    image: reg.d09.no/lager/changelog
+    workdir: /app
+    auth:
+      username: thomas
+      password: $$REG_D09_PASSWORD
+    volumes:
+      application:
+        - /go/src/git.d09.no/lager/lager /app
+
+# artifacts join provided path with the container mount unless it's starting with /
+artifacts:
+  application:
+    - outbin
+  changelog:
+    - changelog.md
+
+# targets for deployment
+publish:
+  gcs:
+    auth_key: >
+      $$GC_SERVICE_KEY
+    source:
+      application:
+        - outbin
+      changelog:
+        - "*"
+    target: mybucket/$$BUILD_NUMBER
+    # ignore: ""
+    acl:
+      - allUsers:READER
+    cache_control: public,max-age=3600
+    metadata:
+      x-goog-meta-foo: bar
